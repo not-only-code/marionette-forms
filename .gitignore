@@ -23,6 +23,5 @@ deploy.sh
 
 #project
 
-/dist
 /validation-report.json
 /validation-status.json
