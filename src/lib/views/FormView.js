@@ -1,25 +1,38 @@
-var FormView = Backbone.Marionette.View.extend({
+Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
 
     defaultSchema: {
         ui: null,
         event: null,
-        validate: false,
+        validate: true,
         type: 'text',
         message: 'invalid field'
     },
 
+    schema: {},
+
+    ui: {},
+
+    constructor: function(options) {
+
+        if (_.isUndefined(options) || _.isUndefined(options.model)) {
+            this.model = new Backbone.Marionette.FormModel();
+        }
+
+        if (!_.isUndefined(options) &&_.has(options, 'schema')) {
+            _.extend(this.schema, options.schema);
+        }
+
+        Backbone.Marionette.View.apply(this, arguments);
+
+        if (_.isEmpty(this.schema)) {
+            throw new Error("FormView instance has empty schema");
+        }
+    },
+
     delegateFormEvents: function() {
 
-        if (_.isEmpty(this.schema) || !this.$el) {
+        if (!this.$el) {
             return;
-        }
-
-        if (_.isUndefined(this.ui)) {
-            this.ui = {};
-        }
-
-        if (_.isUndefined(this.model)) {
-            this.model = new Backbone.Marionette.FormModel();
         }
 
         _.each(this.schema, _.bind(function(_item, key) {
@@ -33,7 +46,9 @@ var FormView = Backbone.Marionette.View.extend({
 
             this.ui[key] = this.$el.find(item.ui);
             this.delegate(item.event, item.ui, _.bind(this.saveItem, this), item);
+
             if (item.validate) {
+                this.ui[key].addClass('required');
                 this.listenTo(this.model, 'invalid:'+key, this.errorItem);
             }
 
@@ -74,13 +89,26 @@ var FormView = Backbone.Marionette.View.extend({
     },
 
     saveItem: function(event) {
-        var options = event.data || null;
+        var options = event.data || null, val;
         if (_.isNull(options)) {
             return;
         }
         this.valid();
         this.ui[options.key].removeClass('error');
-        this.model.set(options.key, this.ui[options.key].val(), options);
+
+        switch(options.type) {
+            case 'checkbox':
+                val = this.ui[options.key].is(':checked');
+                break;
+            case 'radio':
+                val =  this.ui[options.key].filter(':checked').val();
+                break;
+            default:
+                val =  this.ui[options.key].val();
+                break;
+        }
+
+        this.model.set(options.key, val, options);
     },
 
     errorItem: function(options) {
@@ -99,5 +127,3 @@ var FormView = Backbone.Marionette.View.extend({
     }
 
 });
-
-Backbone.Marionette.FormView = FormView;
