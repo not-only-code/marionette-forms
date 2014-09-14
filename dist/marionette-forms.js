@@ -10,26 +10,71 @@
 ;(function() {
 "use strict";
 
-var FormModel = Backbone.Model.extend({
+Backbone.Marionette.FormModel = Backbone.Model.extend({
     // validar cada tipo de datos lanzando un evento
-
-    types: ['email', 'text', 'number', 'url'],
 
     validations: {
         email: /^[\w\-]{1,}([\w\-\+.]{1,1}[\w\-]{1,}){0,}[@][\w\-]{1,}([.]([\w\-]{1,})){1,3}$/,
         url: /^(http|https):\/\/(([A-Z0-9][A-Z0-9_\-]*)(\.[A-Z0-9][A-Z0-9_\-]*)+)(:(\d+))?\/?/i,
         number: /^[0-9]*\.?[0-9]*?$/,
-        text: function(input) {
-            return (typeof input === 'string' && input.length > 2);
+        text: function(input, opts) {
+            var length =  (opts.options && opts.options.length) ? opts.options.length : 3; 
+            return (_.isString(input) && input.length >= length);
+        },
+        select: function(input, opts) {
+            var def = (opts.options && opts.options.default) ? opts.options.default : "0";
+            return (_.isString(input) && input !== def);
+        },
+        password: function(input, opts) {
+            if (_.has(opts.options, 'repeat') ) {
+
+                    if (_.isString(opts.options.repeat)) {
+                        opts.options.repeat = $(opts.options.repeat);
+                    }
+
+                    if (opts.options.repeat instanceof jQuery) {
+
+                        return opts.options.repeat.val() === input;
+
+                    } else {
+                        return this.validateText(input, opts);
+                    }
+                } else {
+                    return this.validateText(input, opts);
+            }
+        },
+        regexp: function(input, opts) {
+            if (!_.has(opts.options, 'regexp')) {
+                throw new Error("Regexp validation must have a regexp option to validate it");
+            }
+
+            if (!_.isRegExp(opts.options.regexp)) {
+                throw new Error("options.regexp must be a regular expression");  
+            }
+
+            return opts.options.regexp.test(input);
+        },
+        radio: function(input, opts) {
+            console.log(input);
+            return (!_.isUndefined(input));
+        },
+        checkbox: function(input, opts) {
+            return input;
+        },
+        custom: function(input, opts) {
+            if (!_.isFunction(opts.options.regexp)) {
+                throw new Error("options must be a function");
+            }
+            return opts.options(input);
         }
     },
 
     validate: function(attributes, options) {
 
-        if (_.has(options, 'key') && _.has(options, 'type') && _.contains(this.types, options.type)) {
+        if (_.has(options, 'key') && _.has(options, 'type') && _.contains(_.keys(this.validations), options.type)) {
             var valid;
-            if (typeof this.validations[options.type] === 'function') {
-                valid = this.validations[options.type](attributes[options.key]);
+            if (_.isFunction(this.validations[options.type])) {
+                valid = this.validations[options.type](attributes[options.key], options);
             } else {
                 valid = this.validations[options.type].test(attributes[options.key]);
             }
@@ -42,30 +87,41 @@ var FormModel = Backbone.Model.extend({
     }
 
 });
-
-Backbone.Marionette.FormModel = FormModel;
-var FormView = Backbone.Marionette.View.extend({
+Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
 
     defaultSchema: {
         ui: null,
         event: null,
-        validate: false,
+        validate: true,
         type: 'text',
         message: 'invalid field'
     },
 
+    schema: {},
+
+    ui: {},
+
+    constructor: function(options) {
+
+        if (_.isUndefined(options) || _.isUndefined(options.model)) {
+            this.model = new Backbone.Marionette.FormModel();
+        }
+
+        if (!_.isUndefined(options) &&_.has(options, 'schema')) {
+            _.extend(this.schema, options.schema);
+        }
+
+        Backbone.Marionette.View.apply(this, arguments);
+
+        if (_.isEmpty(this.schema)) {
+            throw new Error("FormView instance has empty schema");
+        }
+    },
+
     delegateFormEvents: function() {
 
-        if (_.isEmpty(this.schema) || !this.$el) {
+        if (!this.$el) {
             return;
-        }
-
-        if (_.isUndefined(this.ui)) {
-            this.ui = {};
-        }
-
-        if (_.isUndefined(this.model)) {
-            this.model = new Backbone.Marionette.FormModel();
         }
 
         _.each(this.schema, _.bind(function(_item, key) {
@@ -79,7 +135,9 @@ var FormView = Backbone.Marionette.View.extend({
 
             this.ui[key] = this.$el.find(item.ui);
             this.delegate(item.event, item.ui, _.bind(this.saveItem, this), item);
+
             if (item.validate) {
+                this.ui[key].addClass('required');
                 this.listenTo(this.model, 'invalid:'+key, this.errorItem);
             }
 
@@ -120,13 +178,26 @@ var FormView = Backbone.Marionette.View.extend({
     },
 
     saveItem: function(event) {
-        var options = event.data || null;
+        var options = event.data || null, val;
         if (_.isNull(options)) {
             return;
         }
         this.valid();
         this.ui[options.key].removeClass('error');
-        this.model.set(options.key, this.ui[options.key].val(), options);
+
+        switch(options.type) {
+            case 'checkbox':
+                val = this.ui[options.key].is(':checked');
+                break;
+            case 'radio':
+                val =  this.ui[options.key].filter(':checked').val();
+                break;
+            default:
+                val =  this.ui[options.key].val();
+                break;
+        }
+
+        this.model.set(options.key, val, options);
     },
 
     errorItem: function(options) {
@@ -145,7 +216,5 @@ var FormView = Backbone.Marionette.View.extend({
     }
 
 });
-
-Backbone.Marionette.FormView = FormView;
 })(window || global || this);
 //# sourceMappingURL=marionette-forms.js.map
