@@ -183,7 +183,7 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
             return;
         }
         this.valid();
-        this.ui[options.key].removeClass('error');
+        this.ui[options.key].removeClass('invalid');
 
         switch(options.type) {
             case 'checkbox':
@@ -204,7 +204,7 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
         if (!options || _.isEmpty(options) || !this.ui[options.key]) {
             return;
         }
-        this.ui[options.key].addClass('error');
+        this.ui[options.key].addClass('invalid');
     },
 
     invalid: function() {
