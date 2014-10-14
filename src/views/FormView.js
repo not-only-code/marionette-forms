@@ -27,6 +27,8 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
         if (_.isEmpty(this.schema)) {
             throw new Error("FormView instance has empty schema");
         }
+
+        return this;
     },
 
     delegateFormEvents: function() {
@@ -118,12 +120,22 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
         this.ui[options.key].addClass('invalid');
     },
 
+    saveAll: function() {
+        _.each(this.schema, _.bind(function(_item, key) {
+            var item = _.extend(_.clone(this.defaultSchema), _item);
+            item.key = key;
+            this.saveItem({
+                data: item
+            });
+        },this));
+    },
+
     invalid: function() {
-        // override this function
+        this.isValid = false;
     },
 
     valid: function() {
-        // override this function
+        this.isValid = true;
     }
 
 });

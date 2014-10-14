@@ -19,7 +19,7 @@ module.exports = function (grunt) {
             options: {
                 jshintrc: '.jshintrc'
             },
-            files: ['src/**/*.js']
+            files: ['src/**/*.js', 'Gruntfile.js']
         },
         concat: {
             options: {
@@ -29,8 +29,8 @@ module.exports = function (grunt) {
             },
             dist: {
                 src: [
-                    'src/lib/models/FormModel.js',
-                    'src/lib/views/FormView.js'
+                    'src/models/FormModel.js',
+                    'src/views/FormView.js'
                 ],
                 dest: 'dist/<%= pkg.name %>.js'
             }
