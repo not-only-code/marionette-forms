@@ -111,13 +111,23 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
             _.extend(this.schema, options.schema);
         }
 
-        Backbone.Marionette.View.apply(this, arguments);
-
         if (_.isEmpty(this.schema)) {
             throw new Error("FormView instance has empty schema");
         }
 
+        this.addSchemaElements();
+
+        Backbone.Marionette.View.apply(this, arguments);
+
         return this;
+    },
+
+    addSchemaElements: function() {
+        _.each(this.schema, _.bind(function(item, key){
+            if (_.has(item, 'ui') && !_.isEmpty(item.ui)) {
+                this.ui[key] = item.ui;
+            }
+        }, this));
     },
 
     delegateFormEvents: function() {
@@ -135,7 +145,9 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
                 return;
             }
 
-            this.ui[key] = this.$el.find(item.ui);
+            if (!_.has(this.ui, key)) {
+                this.ui[key] = this.$el.find(item.ui);
+            }
             this.delegate(item.event, item.ui, _.bind(this.saveItem, this), item);
 
             if (item.validate) {
