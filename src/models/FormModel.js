@@ -43,7 +43,6 @@ Backbone.Marionette.FormModel = Backbone.Model.extend({
             return opts.options.regexp.test(input);
         },
         radio: function(input, opts) {
-            console.log(input);
             return (!_.isUndefined(input));
         },
         checkbox: function(input, opts) {

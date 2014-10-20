@@ -55,7 +55,6 @@ Backbone.Marionette.FormModel = Backbone.Model.extend({
             return opts.options.regexp.test(input);
         },
         radio: function(input, opts) {
-            console.log(input);
             return (!_.isUndefined(input));
         },
         checkbox: function(input, opts) {
@@ -93,6 +92,7 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
         ui: null,
         event: null,
         validate: true,
+        valid: true,
         type: 'text',
         message: 'invalid field'
     },
@@ -152,11 +152,12 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
 
             if (item.validate) {
                 this.ui[key].addClass('required');
+                this.schema[key].valid = false;
                 this.listenTo(this.model, 'invalid:'+key, this.errorItem);
             }
 
         }, this));
-
+        this.isValid();
         this.listenTo(this.model, 'invalid', this.invalid);
     },
 
@@ -196,7 +197,8 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
         if (_.isNull(options)) {
             return;
         }
-        this.valid();
+        this.schema[options.key].valid = true;
+        this.isValid();
         this.ui[options.key].removeClass('invalid');
 
         switch(options.type) {
@@ -218,6 +220,8 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
         if (!options || _.isEmpty(options) || !this.ui[options.key]) {
             return;
         }
+        this.schema[options.key].valid = false;
+        this._invalid();
         this.ui[options.key].addClass('invalid');
     },
 
@@ -231,12 +235,31 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
         },this));
     },
 
+    isValid: function() {
+        for(var key in this.schema) {
+            if (!this.schema[key].valid) {
+                this._invalid();
+                return false;
+            }
+        }
+        this._valid();
+        return true;
+    },
+
+    _invalid: function() {
+        this.$el.removeClass('valid').addClass('invalid');
+        this.invalid();
+    },
+
+    _valid: function() {
+        this.$el.removeClass('invalid').addClass('valid');
+        this.valid();
+    },
+
     invalid: function() {
-        this.isValid = false;
     },
 
     valid: function() {
-        this.isValid = true;
     }
 
 });
