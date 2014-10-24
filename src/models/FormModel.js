@@ -4,7 +4,7 @@ Backbone.Marionette.FormModel = Backbone.Model.extend({
     validations: {
         email: /^[\w\-]{1,}([\w\-\+.]{1,1}[\w\-]{1,}){0,}[@][\w\-]{1,}([.]([\w\-]{1,})){1,3}$/,
         url: /^(http|https):\/\/(([A-Z0-9][A-Z0-9_\-]*)(\.[A-Z0-9][A-Z0-9_\-]*)+)(:(\d+))?\/?/i,
-        number: /^[0-9]*\.?[0-9]*?$/,
+        number: /^\d+$/,
         text: function(input, opts) {
             var length =  (opts.options && opts.options.length) ? opts.options.length : 3; 
             return (_.isString(input) && input.length >= length);
