@@ -97,6 +97,10 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
         message: 'invalid field'
     },
 
+    options: {
+        model_binding: true
+    },
+
     schema: {},
 
     ui: {},
@@ -155,8 +159,10 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
 
         }, this));
         this.isValid();
-        this.listenTo(this.model, 'change', this.fillItems);
         this.listenTo(this.model, 'invalid', this._invalid);
+        if (this.options.model_binding) {
+            this.listenTo(this.model, 'change', this.fillItems);
+        }
     },
 
     delegate: function(eventName, selector, listener, options) {
@@ -198,7 +204,7 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
     },
 
     fillItems: function(model, value, options) {
-        if (_.isEmpty(model.changed)) {
+        if (_.isEmpty(model.changed) || !this.options.model_binding) {
             return;
         }
 
