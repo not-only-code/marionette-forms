@@ -21,14 +21,14 @@ Backbone.Marionette.FormModel = Backbone.Model.extend({
                     }
 
                     if (opts.options.repeat instanceof jQuery) {
-
-                        return opts.options.repeat.val() === input;
-
+                        return (opts.options.repeat.val() === input && this.text(input, opts));
                     } else {
-                        return this.validateText(input, opts);
+                        return this.text(input, opts);
                     }
-                } else {
-                    return this.validateText(input, opts);
+
+            } else {
+
+                return this.text(input, opts);
             }
         },
         regexp: function(input, opts) {
