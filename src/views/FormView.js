@@ -67,7 +67,8 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
 
         }, this));
         this.isValid();
-        this.listenTo(this.model, 'invalid', this.invalid);
+        this.listenTo(this.model, 'change', this.fillItems);
+        this.listenTo(this.model, 'invalid', this._invalid);
     },
 
     delegate: function(eventName, selector, listener, options) {
@@ -84,6 +85,7 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
                 this.stopListening(this.model, 'change:'+key, this.errorItem);
             }
         }, this));
+        this.stopListening(this.model, 'change', this.fillItems);
         this.stopListening(this.model, 'invalid', this._invalid);
         return this;
     },
@@ -105,6 +107,43 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
         this.unbindEntityEvents(this.model, this.getOption('modelEvents'));
         this.unbindEntityEvents(this.collection, this.getOption('collectionEvents'));
         return this;
+    },
+
+    fillItems: function(model, value, options) {
+        if (_.isEmpty(model.changed)) {
+            return;
+        }
+
+        for(var key in model.changed) {
+            if (_.has(this.ui, key)) {
+                var $item = this.ui[key],
+                    val = model.changed[key];
+
+                switch ($item.attr('type')) {
+                    case 'radio':
+                        var $filtered =  $item.filter('[value='+val+']');
+                        if ($filtered.prop('checked') !== true) {
+                            $filtered.prop('checked', true);
+                        }
+                        break;
+                    case 'checkbox':
+                        if ($item.prop('checked') !== Boolean(val)) {
+                            $item.prop('checked', Boolean(val));
+                        }
+                        break;
+                    default:
+                        if ($item.val() !== val) {
+                            console.log('excribiendo');
+                            $item.val(val);
+                        }
+                    break;
+                }
+
+                if ($item.is('select') && !_.isUndefined($item.select2)) {
+                    $item.select2('val', val);
+                }
+            }
+        }
     },
 
     saveItem: function(event) {
