@@ -57,9 +57,6 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
                 return;
             }
 
-            if (!_.has(this.ui, key)) {
-                this.ui[key] = this.$el.find(item.ui);
-            }
             this.delegate(item.event, item.ui, _.bind(this.saveItem, this), item);
 
             if (item.validate) {
@@ -82,6 +79,12 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
         if (this.$el) {
             this.$el.off('.formEvents' + this.cid);
         }
+        _.each(this.schema, _.bind(function(item, key) {
+            if (item.validate) {
+                this.stopListening(this.model, 'change:'+key, this.errorItem);
+            }
+        }, this));
+        this.stopListening(this.model, 'invalid', this._invalid);
         return this;
     },
 
