@@ -16,7 +16,7 @@ Backbone.Marionette.FormModel = Backbone.Model.extend({
     validations: {
         email: /^[\w\-]{1,}([\w\-\+.]{1,1}[\w\-]{1,}){0,}[@][\w\-]{1,}([.]([\w\-]{1,})){1,3}$/,
         url: /^(http|https):\/\/(([A-Z0-9][A-Z0-9_\-]*)(\.[A-Z0-9][A-Z0-9_\-]*)+)(:(\d+))?\/?/i,
-        number: /^[0-9]*\.?[0-9]*?$/,
+        number: /^\d+$/,
         text: function(input, opts) {
             var length =  (opts.options && opts.options.length) ? opts.options.length : 3; 
             return (_.isString(input) && input.length >= length);
@@ -33,14 +33,14 @@ Backbone.Marionette.FormModel = Backbone.Model.extend({
                     }
 
                     if (opts.options.repeat instanceof jQuery) {
-
-                        return opts.options.repeat.val() === input;
-
+                        return (opts.options.repeat.val() === input && this.text(input, opts));
                     } else {
-                        return this.validateText(input, opts);
+                        return this.text(input, opts);
                     }
-                } else {
-                    return this.validateText(input, opts);
+
+            } else {
+
+                return this.text(input, opts);
             }
         },
         regexp: function(input, opts) {
@@ -145,9 +145,6 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
                 return;
             }
 
-            if (!_.has(this.ui, key)) {
-                this.ui[key] = this.$el.find(item.ui);
-            }
             this.delegate(item.event, item.ui, _.bind(this.saveItem, this), item);
 
             if (item.validate) {
@@ -158,7 +155,8 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
 
         }, this));
         this.isValid();
-        this.listenTo(this.model, 'invalid', this.invalid);
+        this.listenTo(this.model, 'change', this.fillItems);
+        this.listenTo(this.model, 'invalid', this._invalid);
     },
 
     delegate: function(eventName, selector, listener, options) {
@@ -170,6 +168,13 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
         if (this.$el) {
             this.$el.off('.formEvents' + this.cid);
         }
+        _.each(this.schema, _.bind(function(item, key) {
+            if (item.validate) {
+                this.stopListening(this.model, 'change:'+key, this.errorItem);
+            }
+        }, this));
+        this.stopListening(this.model, 'change', this.fillItems);
+        this.stopListening(this.model, 'invalid', this._invalid);
         return this;
     },
 
@@ -190,6 +195,43 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
         this.unbindEntityEvents(this.model, this.getOption('modelEvents'));
         this.unbindEntityEvents(this.collection, this.getOption('collectionEvents'));
         return this;
+    },
+
+    fillItems: function(model, value, options) {
+        if (_.isEmpty(model.changed)) {
+            return;
+        }
+
+        for(var key in model.changed) {
+            if (_.has(this.ui, key)) {
+                var $item = this.ui[key],
+                    val = model.changed[key];
+
+                switch ($item.attr('type')) {
+                    case 'radio':
+                        var $filtered =  $item.filter('[value='+val+']');
+                        if ($filtered.prop('checked') !== true) {
+                            $filtered.prop('checked', true);
+                        }
+                        break;
+                    case 'checkbox':
+                        if ($item.prop('checked') !== Boolean(val)) {
+                            $item.prop('checked', Boolean(val));
+                        }
+                        break;
+                    default:
+                        if ($item.val() !== val) {
+                            console.log('excribiendo');
+                            $item.val(val);
+                        }
+                    break;
+                }
+
+                if ($item.is('select') && !_.isUndefined($item.select2)) {
+                    $item.select2('val', val);
+                }
+            }
+        }
     },
 
     saveItem: function(event) {
