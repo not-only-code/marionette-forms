@@ -6,26 +6,6 @@ As [Backbone Forms](https://github.com/powmedia/backbone-forms) does, **Marionet
 
 **Marionette Forms does not render your fields, you must provide the entire html form to the FormView.**
 
-
-## Files tree
-
-    ├── tests
-    ├── dist
-    │    └── marionette-forms.js
-    ├── src
-    |    ├── lib
-    |    |    ├── views
-    |    |    |   └── FormView.js
-    |    |    └── models
-    |    |        └── FormModel.js
-    │    └── js
-    ├── .jshitrc
-    ├── bower.json
-    ├── Gruntfile.js
-    ├── package.json
-    └── readme.md
-
-
 ## Installation
 
 Run npm install ([**node**](http://nodejs.org) and [**npm**](https://npmjs.org) previously installed)
@@ -46,7 +26,7 @@ Form html:
 ```html
 <form id="my-form">
     <input type="email" class="field email">
-    <input type="text" class="field passwod">
+    <input type="text" class="field password">
     <input type="submit" class="field submit">
 </form>
 ```
@@ -120,15 +100,34 @@ Also each invalid field will be marked as 'invalid' (**class="invalid"**) if do 
 Of course you can override this behaviors extending **FormView** class.  
 
 
-## FormView events
-
-2 functions will be executed when is valid or invalid: 
+## Two-way binding
+You can inject data in the model and the fields will show the value instantly.
 ```js
-valid: function() {
-    // called when all fields are valid
-},
-invalid: function() {
-    // called when a field is invalid
-}
+myFormModel.set('name', 'Joshua');
+// this means the input name will replace his value for 'Joshua'
 ```
+
+You can avoid this behavior setting up **FormView** with `model_binding` = `false`.
+```js
+new myForm({
+    model: new myFormModel();
+    model_binding: false
+});
+```
+[Here, a practical example how to fill a form injecting data in the model.](http://jsfiddle.net/ywjgjkxv/1)
+
+## FormView methods
+
+Some functions will be executed when at some behaviors: 
+
+method      | description                                                                        | return
+------------|------------------------------------------------------------------------------------|-------------
+`valid`     | this function is called when all required fields are valid, you can override it    | 
+`invalid`   | this function is called when one required field is invalid, you can override it    | 
+`saveAll`   | you can call this function to save and validate all fields                         | 
+`isValid`   | you can call this function to know if the form is valid or not                     | `boolean`
+
+Just before `valid` or `invalid` are called  the form will be marked as 'valid/invalid' (**class="invalid"**) so you can show the status via css like the fields. 
+
+
 All validation events will be removed on **FormView.destroy()** and re-apply on **.show()** following **MarionetteJS** patterns in order to avoid memory leaks.
