@@ -1,5 +1,5 @@
 Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
-
+    
     defaultSchema: {
         ui: null,
         event: null,
@@ -35,15 +35,31 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
 
         Backbone.Marionette.View.apply(this, arguments);
 
+        if (!_.isUndefined(this.model)) {
+            this.model.schema = this.schema;
+        }
+
         return this;
     },
 
     addSchemaElements: function() {
-        _.each(this.schema, _.bind(function(item, key){
+
+        for( var key in this.schema) {
+            var item = this.schema[key];
+
+            // adds schema item to ui
             if (_.has(item, 'ui') && !_.isEmpty(item.ui)) {
                 this.ui[key] = item.ui;
             }
-        }, this));
+
+            // extends defaults
+            this.schema[key] = _.extend(_.clone(this.defaultSchema), item);
+
+            // creates a self ref inside each item
+            if (!_.has(item, 'key')) {
+                this.schema[key].key = key;
+            }
+        }
     },
 
     delegateFormEvents: function() {
@@ -52,10 +68,8 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
             return;
         }
 
-        _.each(this.schema, _.bind(function(_item, key) {
-
-            var item = _.extend(_.clone(this.defaultSchema), _item);
-            item.key = key;
+        for (var key in this.schema) {
+            var item = this.schema[key];
 
             if (_.isNull(item.ui) || _.isNull(item.event)) {
                 return;
@@ -68,8 +82,8 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
                 this.schema[key].valid = false;
                 this.listenTo(this.model, 'invalid:'+key, this.errorItem);
             }
+        }
 
-        }, this));
         this.isValid();
         this.listenTo(this.model, 'invalid', this._invalid);
         if (this.options.model_binding) {
@@ -127,7 +141,7 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
 
                 switch ($item.attr('type')) {
                     case 'radio':
-                        var $filtered =  $item.filter('[value='+val+']');
+                        var $filtered = $item.filter('[value='+val+']');
                         if ($filtered.prop('checked') !== true) {
                             $filtered.prop('checked', true);
                         }
@@ -139,7 +153,6 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
                         break;
                     default:
                         if ($item.val() !== val) {
-                            console.log('excribiendo');
                             $item.val(val);
                         }
                     break;
@@ -157,7 +170,7 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
         if (_.isNull(options)) {
             return;
         }
-        this.schema[options.key].valid = true;
+        //this.schema[options.key].valid = true;
         this.isValid();
         this.ui[options.key].removeClass('invalid');
 
@@ -177,10 +190,9 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
     },
 
     errorItem: function(options) {
-        if (!options || _.isEmpty(options) || !this.ui[options.key]) {
+        if (_.isUndefined(options) || _.isEmpty(options) || !_.has(this.ui, options.key)) {
             return;
         }
-        this.schema[options.key].valid = false;
         this._invalid();
         this.ui[options.key].addClass('invalid');
     },

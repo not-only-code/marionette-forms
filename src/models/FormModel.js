@@ -1,5 +1,10 @@
 Backbone.Marionette.FormModel = Backbone.Model.extend({
-    // validar cada tipo de datos lanzando un evento
+
+    schema: {},
+
+    initialize: function() {
+        this.validation_keys = _.keys(this.validations);
+    },
 
     validations: {
         email: /^[\w\-]{1,}([\w\-\+.]{1,1}[\w\-]{1,}){0,}[@][\w\-]{1,}([.]([\w\-]{1,})){1,3}$/,
@@ -56,19 +61,41 @@ Backbone.Marionette.FormModel = Backbone.Model.extend({
         }
     },
 
+    _validate: function(attrs, options) {
+        if (!options.validate || !this.validate) {
+            return true;
+        }
+        var error = this.validationError = this.validate(attrs, options) || null;
+        if (!error) {
+            return true;
+        }
+        this.trigger('invalid', this, error, _.extend(options, {validationError: error}));
+        return false;
+    },
+
     validate: function(attributes, options) {
+        var opts, val;
 
-        if (_.has(options, 'key') && _.has(options, 'type') && _.contains(_.keys(this.validations), options.type)) {
-            var valid;
-            if (_.isFunction(this.validations[options.type])) {
-                valid = this.validations[options.type](attributes[options.key], options);
-            } else {
-                valid = this.validations[options.type].test(attributes[options.key]);
-            }
+        if (_.isUndefined(this.schema) || _.isEmpty(this.schema)) {
+            return;
+        }
 
-            if (!valid) {
-                this.trigger('invalid:'+options.key, options);
-                return options.message;
+        for (var key in attributes) {
+            opts = this.schema[key] || null;
+            val = attributes[key];
+
+            if (!_.isNull(opts) && _.has(opts, 'type') && _.contains(this.validation_keys, opts.type)) {
+                
+                if (_.isFunction(this.validations[opts.type])) {
+                    opts.valid = this.validations[opts.type](val, opts);
+                } else {
+                    opts.valid = this.validations[opts.type].test(val);
+                }
+
+                if (!opts.valid) {
+                    this.trigger('invalid:' + key, opts);
+                    return options.message;
+                }
             }
         }
     }
