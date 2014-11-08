@@ -190,7 +190,7 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
                 return;
             }
 
-            this.delegate(item.event, item.ui, _.bind(this.saveItem, this), item);
+            this.delegateFormItem(item.event, item.ui, _.bind(this.saveItem, this), item);
 
             if (item.validate) {
                 this.ui[key].addClass('required');
@@ -206,7 +206,7 @@ Backbone.Marionette.FormView = Backbone.Marionette.View.extend({
         }
     },
 
-    delegate: function(eventName, selector, listener, options) {
+    delegateFormItem: function(eventName, selector, listener, options) {
         var opts = options || {};
         this.$el.on(eventName + '.formEvents' + this.cid, selector, opts, listener);
     },
